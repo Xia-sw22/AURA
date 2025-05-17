@@ -1,5 +1,3 @@
-# A Deep Learning Model for Personalized Intra-arterial Therapy Planning in Unresectable Hepatocellular Carcinoma
-
 This repository provides the code for [Multimodal transformer-based model for predicting prognosis after radiotherapy plus systemic therapy in hepatocellular carcinoma]. Based on the code, you can easily train your own AURA by configuring your own dataset and modifying the training details (such as optimizer, learning rate, etc).
 
 ## Overview
