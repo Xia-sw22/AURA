@@ -4,6 +4,10 @@ This repository provides the code for [Multimodal transformer-based model for pr
 
 AURA is a transformer-based multimodal medical prediction model that can perform both classification and survival prediction tasks. It processes data from three modalities *[imaging, text, and structured metrics]** and integrates them using cross-attention mechanisms for fusion.*
 
+This repository contains two training scripts for the AURA model:
+- `train_response.py`: Binary classification task for treatment response prediction
+- `train_survival.py`: Survival analysis task for time-to-event prediction
+
 ## Setup the Environment
 
 This software was implemented in a system running Windows 10, with Python 3.9, PyTorch 2.5.1, and CUDA 12.1.
@@ -14,25 +18,37 @@ You can adjust the batch size to adapt to your own hardware environment. Persona
 
 The main architecture of AURA lies in the models/ folder. The files modeling_aura.py and modeling_aura_surv serve as the main backbone for classification tasks and survival tasks, while the rest necessary modules are distributed into different files based on their own functions, i.e., attention.py, block.py, configs.py, embed.py, encoder.py, and mlp.py. Please refer to each file to acquire more implementation details.
 
-Parameter description:
+## Data Preparation
 
-The training script requires three data files (pickle format):
+Both scripts require three data files (pickle format):
 - Training data (`train_data.pkl`)
-- Validation data (`val_data.pkl`) 
+- Validation data (`val_data.pkl`)
 - Test data (`test_data.pkl`)
 
-Each data file should contain the following fields:
+### Classification Task Data Format
+Each data file should contain:
 - `images`: Image data
 - `text_features`: Text features
 - `structured_data`: Structured data
 - `age`: Age information
 - `sex`: Gender information
-- `labels`: Label data
+- `labels`: Binary labels (0/1)
+
+### Survival Task Data Format
+Each data file should contain:
+- `images`: Image data
+- `text_features`: Text features
+- `structured_data`: Structured data
+- `age`: Age information
+- `sex`: Gender information
+- `event`: Event indicator (0/1)
+- `time`: Time to event
 
 ## Running Training
 
 ### Basic Usage
 
+1. For Classification Task:
 ```bash
 python train_response.py \
     --train_data path/to/train_data.pkl \
@@ -40,39 +56,34 @@ python train_response.py \
     --test_data path/to/test_data.pkl
 ```
 
-### Complete Parameter Description
+2. For Survival Task:
+```bash
+python train_survival.py \
+    --train_data path/to/train_data.pkl \
+    --val_data path/to/val_data.pkl \
+    --test_data path/to/test_data.pkl
+```
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `--train_data` | Path to training data file | Required |
-| `--val_data` | Path to validation data file | Required |
-| `--test_data` | Path to test data file | Required |
-| `--batch_size` | Training batch size | 16 |
-| `--lr` | Learning rate | 1e-5 |
-| `--num_epochs` | Number of training epochs | 30 |
-| `--num_classes` | Number of classes | 2 |
-| `--save_path` | Path to save models | ./checkpoints/task_response |
-| `--resume_from_checkpoint` | Resume training from checkpoint | None |
-| `--contrastive_weight` | Weight for contrastive loss | 0.1 |
-| `--temperature` | Temperature parameter for contrastive loss | 0.1 |
-| `--weight_decay` | Weight decay for optimizer | 0.01 |
-| `--seed` | Random seed | 42 |
-| `--device` | Training device (cuda/cpu) | cuda |
-| `--num_workers` | Number of data loading workers | 0 |
-| `--save_every_n_epochs` | Save model every N epochs | 10 |
-| `--early_stopping` | Early stopping patience | 5 |
+### Common Parameters
+
+Both scripts share these common parameters:
+- `--train_data`: Path to training data file (required)
+- `--val_data`: Path to validation data file (required)
+- `--test_data`: Path to test data file (required)
+- `--batch_size`: Training batch size (default: 16)
+- `--lr`: Learning rate (default: 1e-5 for classification, 3e-5 for survival)
+- `--num_epochs`: Number of training epochs (default: 30)
+- `--save_path`: Path to save models (default: ./checkpoints/task_response or ./checkpoints/task_surv)
+- `--resume_from_checkpoint`: Path to resume training from checkpoint (default: None)
+- `--seed`: Random seed for reproducibility (default: 42)
+- `--device`: Training device, either 'cuda' or 'cpu' (default: cuda)
+- `--num_workers`: Number of data loading workers (default: 0)
+- `--save_every_n_epochs`: Save model every N epochs (default: 10 for classification, 30 for survival)
+- `--early_stopping`: Early stopping patience (default: 5)
 
 ### Example Commands
 
-1. Basic training:
-```bash
-python train_response.py \
-    --train_data ./data/train.pkl \
-    --val_data ./data/val.pkl \
-    --test_data ./data/test.pkl
-```
-
-2. Training with custom parameters:
+1. Classification task with custom parameters:
 ```bash
 python train_response.py \
     --train_data ./data/train.pkl \
@@ -81,59 +92,74 @@ python train_response.py \
     --batch_size 32 \
     --lr 2e-5 \
     --num_epochs 50 \
-    --device cuda \
-    --save_path ./my_checkpoints \
-    --early_stopping 10
+    --contrastive_weight 0.2 \
+    --temperature 0.2
 ```
 
-3. Resume training from checkpoint:
+2. Survival task with custom parameters:
 ```bash
-python train_response.py \
+python train_survival.py \
     --train_data ./data/train.pkl \
     --val_data ./data/val.pkl \
     --test_data ./data/test.pkl \
-    --resume_from_checkpoint ./checkpoints/task_response/best_model.pth
+    --batch_size 32 \
+    --lr 5e-5 \
+    --num_epochs 50 \
 ```
 
 ## Output Description
 
-The training process generates the following files:
+### Classification Task Outputs
+- Model checkpoints in `{save_path}/`:
+  - `best_model.pth`: Best model
+  - `model_epoch_X.pth`: Periodic checkpoints
+- Training logs in `{save_path}/logs/`
+- Evaluation metrics in `{save_path}/response_results/`:
+  - `train_metrics.csv`: Training metrics (accuracy, precision, recall, F1, AUC, etc.)
+  - `val_metrics.csv`: Validation metrics
+  - `test_metrics.csv`: Test metrics
+  - `train_preds.csv`: Training predictions
+  - `val_preds.csv`: Validation predictions
+  - `test_preds.csv`: Test predictions
 
-1. Model checkpoints:
-   - `best_model.pth`: Best model
-   - `model_epoch_X.pth`: Periodically saved model checkpoints
-
-2. Training logs:
-   - Saved in `{save_path}/logs` directory
-   - Viewable using TensorBoard
-
-3. Evaluation metrics:
-   - Saved in `{save_path}/response_results` directory
-   - `train_metrics.csv`: Training set metrics
-   - `val_metrics.csv`: Validation set metrics
-   - `test_metrics.csv`: Test set metrics
-   - `train_preds.csv`: Training set predictions
-   - `val_preds.csv`: Validation set predictions
-   - `test_preds.csv`: Test set predictions
+### Survival Task Outputs
+- Model checkpoints in `{save_path}/`:
+  - `best_model.pth`: Best model
+  - `model_epoch_X.pth`: Periodic checkpoints
+- Training logs in `{save_path}/logs/`
+- Evaluation metrics in `{save_path}/surv_results/`:
+  - `train_metrics.csv`: Training metrics (loss, C-index)
+  - `val_metrics.csv`: Validation metrics
+  - `test_metrics.csv`: Test metrics
+  - `train_preds.csv`: Training predictions with patient IDs
+  - `val_preds.csv`: Validation predictions with patient IDs
+  - `test_preds.csv`: Test predictions with patient IDs
 
 ## Monitoring Training
 
 Use TensorBoard to monitor training progress:
 ```bash
-tensorboard --logdir ./checkpoints/task_response/logs
+tensorboard --logdir ./checkpoints/task_response/logs  # for classification
+tensorboard --logdir ./checkpoints/task_surv/logs      # for survival
 ```
 
 ## Important Notes
 
 1. Ensure sufficient GPU memory (if using GPU training)
-2. Data files must be in the correct format
-3. Recommended to test the script with a small dataset first
-4. Model performance can be optimized by adjusting `contrastive_weight` and `temperature` parameters
-5. If training is unstable, try adjusting learning rate and weight decay parameters
+2. Data files must be in the correct format for each task
+3. Recommended to test the scripts with a small dataset first
+4. For classification task:
+   - Adjust `contrastive_weight` and `temperature` to optimize model performance
+   - If training is unstable, try adjusting learning rate and weight decay
+5. For survival task:
+   - Monitor C-index as the primary metric
+   - Ensure event and time data are properly normalized
+6. Both tasks support early stopping and model checkpointing
+7. Training logs are saved to `aura_log.log` for the survival task
 
 ## Metrics Tracked
 
-The training script tracks the following metrics:
+### Classification Task
 - Loss
 - Accuracy
 - Precision
@@ -144,6 +170,7 @@ The training script tracks the following metrics:
 - False Positive Rate (FPR)
 - False Negative Rate (FNR)
 
-All metrics are logged to TensorBoard and saved in CSV files for detailed analysis.
-```
+### Survival Task
+- Cox Partial Likelihood Loss
+- C-index (Concordance Index)
 
