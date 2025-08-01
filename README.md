@@ -2,7 +2,7 @@ This repository provides the code for [Multimodal transformer-based model for pr
 
 ## Overview
 
-AURA is a transformer-based multimodal medical prediction model that can perform both classification and survival prediction tasks. It processes data from three modalities *[imaging, text, and structured metrics]** and integrates them using cross-attention mechanisms for fusion.*
+TRIM-uHCC is a transformer-based multimodal medical prediction model that can perform both classification and survival prediction tasks. It processes data from three modalities *[imaging, text, and structured metrics]** and integrates them using cross-attention mechanisms for fusion.*
 
 This repository contains two training scripts for the AURA model:
 - `train_response.py`: Binary classification task for treatment response prediction
