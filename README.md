@@ -1,10 +1,10 @@
-This repository provides the code for [Multimodal transformer-based model for predicting prognosis after radiotherapy plus systemic therapy in hepatocellular carcinoma]. Based on the code, you can easily train your own AURA by configuring your own dataset and modifying the training details (such as optimizer, learning rate, etc).
+This repository provides the code for [Multimodal transformer-based model for predicting prognosis after radiotherapy plus systemic therapy in hepatocellular carcinoma]. Based on the code, you can easily train your own TRIM by configuring your own dataset and modifying the training details (such as optimizer, learning rate, etc).
 
 ## Overview
 
-TRIM-uHCC is a transformer-based multimodal medical prediction model that can perform both classification and survival prediction tasks. It processes data from three modalities *[imaging, text, and structured metrics]** and integrates them using cross-attention mechanisms for fusion.*
+TRIM is a transformer-based multimodal medical prediction model that can perform both classification and survival prediction tasks. It processes data from three modalities *[imaging, text, and structured metrics]** and integrates them using cross-attention mechanisms for fusion.*
 
-This repository contains two training scripts for the AURA model:
+This repository contains two training scripts for the TRIM model:
 - `train_response.py`: Binary classification task for treatment response prediction
 - `train_survival.py`: Survival analysis task for time-to-event prediction
 
@@ -16,7 +16,7 @@ You can adjust the batch size to adapt to your own hardware environment. Persona
 
 ## Code Description
 
-The main architecture of AURA lies in the models/ folder. The files modeling_aura.py and modeling_aura_surv serve as the main backbone for classification tasks and survival tasks, while the rest necessary modules are distributed into different files based on their own functions, i.e., attention.py, block.py, configs.py, embed.py, encoder.py, and mlp.py. Please refer to each file to acquire more implementation details.
+The main architecture of TRIM lies in the models/ folder. The files modeling_aura.py and modeling_aura_surv serve as the main backbone for classification tasks and survival tasks, while the rest necessary modules are distributed into different files based on their own functions, i.e., attention.py, block.py, configs.py, embed.py, encoder.py, and mlp.py. Please refer to each file to acquire more implementation details.
 
 ## Data Preparation
 
