@@ -8,8 +8,8 @@ from tqdm import tqdm
 import pickle
 import numpy as np
 from torch.utils.data import DataLoader
-from models.modeling_aura_surv import AURA
-from models.configs import get_AURA_config
+from models.modeling_trim_surv import TRIM
+from models.configs import get_TRIM_config
 from torch.utils.data import Dataset
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 from torch.utils.tensorboard import SummaryWriter
@@ -21,7 +21,7 @@ from lifelines.utils import concordance_index
 import pandas as pd
 
 logger = logging.getLogger(__name__)
-log_filename = "aura_log.log"  
+log_filename = "trim_log.log"  
 
 logging.basicConfig(level=logging.INFO)
 
@@ -43,13 +43,13 @@ def get_config():
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size for training')
     parser.add_argument('--lr', type=float, default=3e-5, help='Learning rate')
     parser.add_argument('--weight_decay', type=float, default=0.01, help='Weight decay for optimizer')
-    parser.add_argument('--num_epochs', type=int, default=30, help='Number of epochs')
-    parser.add_argument('--save_path', type=str, default='checkpoints/task_surv', help='Path to save the model checkpoints')
+    parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs')
+    parser.add_argument('--save_path', type=str, help='Path to save the model checkpoints')
     parser.add_argument('--resume_from_checkpoint', type=str, default=None, help='Path to resume the model from a checkpoint')
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility')
     parser.add_argument('--device', type=str, choices=['cuda', 'cpu'], default='cuda', help='Device to use for training')
     parser.add_argument('--num_workers', type=int, default=0, help='Number of workers for data loading')
-    parser.add_argument('--save_every_n_epochs', type=int, default=30, help='Save model every n epochs')
+    parser.add_argument('--save_every_n_epochs', type=int, default=5, help='Save model every n epochs')
     parser.add_argument('--early_stopping', type=int, default=5, help='Early stopping patience (epochs without improvement)')
 
     args = parser.parse_args()
@@ -106,6 +106,7 @@ class MultiModalDataset(Dataset):
             'sex': self.data['sex'][idx],
             'event': self.data['event'][idx],
             'time': self.data['time'][idx],
+            'cohort': self.data.get('cohort', torch.zeros(1))[idx] if 'cohort' in self.data else torch.zeros(1),
         }
         return sample
     
@@ -117,8 +118,8 @@ def load_data(data_path):
         return pickle.load(f)
 
 def initialize_model(config):
-    config_model = get_AURA_config()
-    model = AURA(config_model)
+    config_model = get_TRIM_config()
+    model = TRIM(config_model)
     model.to(config.device)
 
     epoch_start = 0
@@ -162,9 +163,10 @@ def train(model, train_dataloader, optimizer, criterion, epoch, config, writer):
         event = data['event'].to(config.device)
         time = data['time'].to(config.device)
         patient_ids = data['patient_id']
+        cohort = data['cohort'].to(config.device)
 
         optimizer.zero_grad()
-        risk, _ = model(x=inputs, cc=cc, lab=lab, sex=sex, age=age)
+        risk, _ = model(x=inputs, cc=cc, lab=lab, sex=sex, age=age, cohort=cohort)
         loss = criterion(risk, event, time)
         loss.backward()
         optimizer.step()
@@ -202,8 +204,9 @@ def evaluate(model, dataloader, criterion, config, writer, epoch, stage='val'):
             event = data['event'].to(config.device)
             time = data['time'].to(config.device)
             patient_ids = data['patient_id']
+            cohort = data['cohort'].to(config.device)
 
-            risk, _ = model(x=inputs, cc=cc, lab=lab, sex=sex, age=age)
+            risk, _ = model(x=inputs, cc=cc, lab=lab, sex=sex, age=age, cohort=cohort)
             loss = criterion(risk, event, time)
 
             running_loss += loss.item()
