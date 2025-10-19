@@ -14,6 +14,7 @@ def get_AURA_config():
     config.classifier = 'token'
     config.representation_size = None
     config.cc_len = 180
-    config.lab_len = 48
+    config.lab_len = 43
     config.use_gating = True
     return config
+
